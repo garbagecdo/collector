@@ -1,0 +1,7 @@
+{
+  "name": "Service Stream",
+  "description": "A streamlined communication platform connecting business owners and riders for efficient laundry, food, and garbage pickup management. Featuring smart task prioritization and real-time status tracking.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
