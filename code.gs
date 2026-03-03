@@ -1,5 +1,5 @@
 function doGet() {
-  return HtmlService.createTemplateFromFile('collector')
+  return HtmlService.createTemplateFromFile('index')
       .evaluate()
       .setTitle('CDO Barangay Collector')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);

@@ -1,1 +1,119 @@
-<h1>hello</h1>
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background-color: #f8f9fa; display: flex; justify-content: center; padding: 20px; }
+    .container { background: white; width: 100%; max-width: 420px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    h2 { color: #202124; text-align: center; margin-bottom: 25px; border-bottom: 2px solid #f1f3f4; padding-bottom: 10px; }
+    
+    label { font-size: 13px; font-weight: 600; color: #5f6368; display: block; margin-bottom: 8px; text-transform: uppercase; }
+    select { width: 100%; padding: 12px; border: 1px solid #dadce0; border-radius: 6px; font-size: 16px; margin-bottom: 20px; }
+
+    .status-card { padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 20px; transition: 0.3s; }
+    .pending { background-color: #feefe3; color: #b06000; border: 1px solid #f9ab00; }
+    .collected { background-color: #e6f4ea; color: #137333; border: 1px solid #1e8e3e; }
+    .status-text { font-size: 18px; font-weight: bold; }
+
+    .button-group { display: flex; flex-direction: column; gap: 10px; }
+    button { width: 100%; padding: 14px; border: none; border-radius: 6px; font-size: 15px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+    
+    .btn-collect { background-color: #1a73e8; color: white; }
+    .btn-collect:hover { background-color: #1765cc; }
+    
+    .btn-done { background-color: #5f6368; color: white; }
+    .btn-done:hover { background-color: #3c4043; }
+    
+    button:disabled { background-color: #dadce0; color: #70757a; cursor: not-allowed; }
+    
+    #loader { text-align: center; font-size: 14px; color: #70757a; margin-top: 15px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Driver Seat</h2>
+  
+  <label for="barangayList">Select Barangay:</label>
+  <select id="barangayList" onchange="updateUI()">
+    <option value="">Loading list...</option>
+  </select>
+
+  <div id="statusBox" class="status-card" style="display:none;">
+    <span id="statusText" class="status-text">STATUS</span>
+  </div>
+
+  <div class="button-group">
+    <button id="collectBtn" class="btn-collect" onclick="processAction('collect')" disabled>Notify & Collect</button>
+    <button id="doneBtn" class="btn-done" onclick="processAction('done')" disabled>Done</button>
+  </div>
+  
+  <div id="loader">Updating status!</div>
+</div>
+
+<script>
+  let groupedData = [];
+
+  window.onload = loadData;
+
+  function loadData() {
+    google.script.run.withSuccessHandler(function(data) {
+      groupedData = data;
+      const select = document.getElementById('barangayList');
+      select.innerHTML = '<option value="" disabled selected>Select a Barangay</option>';
+      data.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.textContent = item.name;
+        select.appendChild(opt);
+      });
+    }).getBarangayData();
+  }
+
+  function updateUI() {
+    const selectedName = document.getElementById('barangayList').value;
+    const item = groupedData.find(b => b.name === selectedName);
+    const box = document.getElementById('statusBox');
+    const text = document.getElementById('statusText');
+    const cBtn = document.getElementById('collectBtn');
+    const dBtn = document.getElementById('doneBtn');
+
+    if (item) {
+      box.style.display = 'block';
+      if (item.status === 1) {
+        box.className = "status-card collected";
+        text.textContent = "NOTIFICATION SENT!";
+        cBtn.disabled = true; // Already collected
+        dBtn.disabled = false; // Can reset to 0
+      } else {
+        box.className = "status-card pending";
+        text.textContent = "STATUS: PENDING | UNSCHEDULED";
+        cBtn.disabled = false; // Can collect
+        dBtn.disabled = true; // Already 0
+      }
+    }
+  }
+
+  function processAction(actionType) {
+    const name = document.getElementById('barangayList').value;
+    const loader = document.getElementById('loader');
+    
+    document.getElementById('collectBtn').disabled = true;
+    document.getElementById('doneBtn').disabled = true;
+    loader.style.display = 'block';
+
+    const serverFunction = (actionType === 'collect') 
+      ? google.script.run.withSuccessHandler(onSuccess).updateStatusToCollected(name)
+      : google.script.run.withSuccessHandler(onSuccess).resetStatusToZero(name);
+  }
+
+  function onSuccess(result) {
+    document.getElementById('loader').style.display = 'none';
+    alert(result);
+    loadData(); // Refresh list to get new grouped status
+    document.getElementById('statusBox').style.display = 'none';
+  }
+</script>
+
+</body>
+</html>
